@@ -3,21 +3,21 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 import {SafeERC20, IERC20} from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
+import "./abstract/NFTSigVerifier.sol";
 
-contract Voucher is ERC721, Ownable {
+contract Voucher is ERC721, Ownable, NFTSigVerifier {
     using SafeERC20 for IERC20;
-
-    struct VoucherInfo {
-        uint216 value;
-        uint40 expirationDate;
-    }
 
     IERC20 public token;
 
-    mapping(uint256 tokenId => VoucherInfo) private vouchers_;
-    constructor(string memory name_, string memory symbol_, IERC20 token_) ERC721(name_, symbol_) {
+    mapping(uint256 tokenId => NFTSigVerifier.VoucherInfo) private vouchers_;
+    constructor(
+        string memory name_, 
+        string memory symbol_, 
+        IERC20 token_, 
+        address protocolSigner_
+    ) ERC721(name_, symbol_) NFTSigVerifier(protocolSigner_) {
         token = token_;
     }
 
@@ -33,10 +33,17 @@ contract Voucher is ERC721, Ownable {
         return vouchers_[tokenId].expirationDate;
     }
 
-    function safeMint(address to, uint256 tokenId, VoucherInfo calldata info) external onlyOwner {
-        super._safeMint(to, tokenId);
+    function safeMint(NftBase calldata base, VoucherInfo calldata info) external onlyOwner {
+        super._safeMint(base.owner, base.tokenId);
         
-        vouchers_[tokenId] = info;
+        vouchers_[base.tokenId] = info;
+    }
+
+    function mintBySig(NFTSigVerifier.VoucherSig calldata voucher, bytes memory rvs) external {
+        verifyVoucher(voucher, rvs);
+        super._safeMint(voucher.base.owner, voucher.base.tokenId);
+        
+        vouchers_[voucher.base.tokenId] = voucher.info;
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal virtual override {

@@ -7,6 +7,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 abstract contract NFTSigVerifier is EIP712, Ownable {
     error InvalidNonce();
+    error WrongSigner();
 
     struct Sig {
         address signer;
@@ -14,18 +15,37 @@ abstract contract NFTSigVerifier is EIP712, Ownable {
         uint256 executionFee;
     }
 
-    // // struct PaymentSig {
-    // //     Sig sig;
-    // //     address receiver;
-    // //     uint256 amount;
-    // //     bytes32 id;
-    // // }
+    struct NftBase {
+        address owner;
+        uint256 tokenId;
+    }
 
-    // struct SettingsSig {
-    //     Sig sig;
-    //     address user;
-    //     Settings settings;
-    // }
+    struct VoucherInfo {
+        uint216 value;
+        uint40 expirationDate;
+    }
+
+    struct StatusMintSig {
+        Sig sig;
+        NftBase base;
+    } 
+
+    struct StatusUpgradeSig {
+        Sig sig;
+        uint256 tokenId;
+        uint256 level;
+    }
+
+    struct VoucherSig {
+        Sig sig;
+        NftBase base;
+        VoucherInfo info;
+    }
+
+    struct MysteryBoxSig {
+        Sig sig;
+        address user;
+    }
 
     string private constant SIGNING_DOMAIN = "NFTSigVerifier";
     string private constant SIGNATURE_VERSION = "1";
@@ -46,42 +66,147 @@ abstract contract NFTSigVerifier is EIP712, Ownable {
         return block.chainid;
     }
 
-    // function _hashSettings(SettingsSig calldata settingssig) internal view returns (bytes32) {
-    //     return
-    //         _hashTypedDataV4(
-    //             keccak256(
-    //                 abi.encode(
-    //                     keccak256(
-    //                         "SettingsSig("
-    //                             "Sig sig,"
-    //                             "address user,"
-    //                             "Settings settings"
-    //                         ")"
-    //                         "Settings("
-    //                             "uint96 subscriptionRate,"
-    //                             "uint16 userFee,"
-    //                             "uint16 protocolFee,"
-    //                         ")"
-    //                         "Sig("
-    //                             "address signer,"
-    //                             "uint256 nonce,"
-    //                             "uint256 executionFee"
-    //                         ")"
-    //                     ),
-    //                     settingssig
-    //                 )
-    //             )
-    //         );
-    // }
+    function _hashStatusMint(StatusMintSig calldata statusMintSig) internal view returns (bytes32) {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "StatusMintSig("
+                                "Sig sig,"
+                                "NftBase base"
+                            ")"
+                            "NftBase("
+                                "address owner,"
+                                "uint256 tokenId"
+                            ")"
+                            "Sig("
+                                "address signer,"
+                                "uint256 nonce,"
+                                "uint256 executionFee"
+                            ")"
+                        ),
+                        statusMintSig
+                    )
+                )
+            );
+    }
 
-    // function verifyUnsubscribe(UnSubSig calldata unsubscription, bytes memory rvs) internal returns (bool) {
-    //     return _verify(
-    //         _hashUnSubscribe(unsubscription), 
-    //         unsubscription.sig.signer, 
-    //         unsubscription.sig.signer, 
-    //         unsubscription.sig.nonce, 
-    //         rvs);
-    // }
+    function _hashStatusUpgrade(StatusUpgradeSig calldata statusUpgradeSig) internal view returns (bytes32) {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "StatusUpgradeSig("
+                                "Sig sig,"
+                                "uint256 tokenId,"
+                                "uint256 level"
+                            ")"
+                            "Sig("
+                                "address signer,"
+                                "uint256 nonce,"
+                                "uint256 executionFee"
+                            ")"
+                        ),
+                        statusUpgradeSig
+                    )
+                )
+            );
+    }
+
+    function _hashVoucher(VoucherSig calldata voucherSig) internal view returns (bytes32) {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "VoucherSig("
+                                "Sig sig,"
+                                "NftBase base,"
+                                "VoucherInfo info"
+                            ")"
+                            "NftBase("
+                                "address owner,"
+                                "uint256 tokenId"
+                            ")"
+                            "Sig("
+                                "address signer,"
+                                "uint256 nonce,"
+                                "uint256 executionFee"
+                            ")"
+                            "VoucherInfo("
+                                "uint216 value,"
+                                "uint40 expirationDate"
+                            ")"
+                        ),
+                        voucherSig
+                    )
+                )
+            );
+    }
+
+    function _hashMysteryBox(MysteryBoxSig calldata mysteryBoxSig) internal view returns (bytes32) {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        keccak256(
+                            "MysteryBoxSig("
+                                "Sig sig,"
+                                "address user"
+                            ")"
+                            "Sig("
+                                "address signer,"
+                                "uint256 nonce,"
+                                "uint256 executionFee"
+                            ")"
+                        ),
+                        mysteryBoxSig
+                    )
+                )
+            );
+    }
+
+    function verifyStatusMint(StatusMintSig calldata statusMint, bytes memory rvs) internal returns (bool) {
+        return _verify(
+            _hashStatusMint(statusMint),
+            protocolSigner,
+            statusMint.sig.signer,
+            statusMint.sig.nonce,
+            rvs
+        );
+    }
+
+    function verifyStatusUpgrade(StatusUpgradeSig calldata statusUpgrade, bytes memory rvs) internal returns (bool) {
+        return _verify(
+            _hashStatusUpgrade(statusUpgrade),
+            protocolSigner,
+            statusUpgrade.sig.signer,
+            statusUpgrade.sig.nonce,
+            rvs
+        );
+    }
+
+    function verifyVoucher(VoucherSig calldata voucher, bytes memory rvs) internal returns (bool) {
+        return _verify(
+            _hashVoucher(voucher),
+            protocolSigner,
+            voucher.sig.signer,
+            voucher.sig.nonce,
+            rvs
+        );
+    }
+
+    function verifyMysteryBox(MysteryBoxSig calldata mysteryBox, bytes memory rvs) internal returns (bool) {
+        return _verify(
+            _hashMysteryBox(mysteryBox),
+            protocolSigner,
+            mysteryBox.sig.signer,
+            mysteryBox.sig.nonce,
+            rvs
+        );
+    }
 
     function _verify(
         bytes32 hash,
