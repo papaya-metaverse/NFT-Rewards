@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Badge is ERC721Pausable, Ownable {
+contract Badge is ERC721, Ownable {
+    bool private _paused;
+
     constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) {
-        _pause();
+        _paused = true;
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
@@ -18,11 +20,17 @@ contract Badge is ERC721Pausable, Ownable {
     }
 
     function pause() external onlyOwner {
-        _pause();
+        _paused = true;
     }
 
     function unpause() external onlyOwner {
-        _unpause();
+        _paused = false;
+    }
+
+    function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal virtual override {
+        if(_paused) {
+            require(from == address(0), "ERC721: transfer is paused");
+        } 
     }
 
 }
