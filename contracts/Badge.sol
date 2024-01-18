@@ -15,8 +15,8 @@ contract Badge is ERC721, Ownable {
         return "";
     }
 
-    function safeMint(address to, uint256 tokenId, bytes memory data) external onlyOwner {
-        _safeMint(to, tokenId, data);
+    function safeMint(address to, uint256 tokenId) external onlyOwner {
+        _safeMint(to, tokenId);
     }
 
     function pause() external onlyOwner {

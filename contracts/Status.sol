@@ -10,7 +10,7 @@ contract Status is ERC721, Ownable, NFTSigVerifier {
 
     bool private _paused;
 
-    mapping(uint256 tokenId => uint256 level) private _level;
+    mapping(uint256 tokenId => uint256 level) public level;
 
     constructor(
         string memory name_, 
@@ -32,26 +32,29 @@ contract Status is ERC721, Ownable, NFTSigVerifier {
         _paused = false;
     }
 
-    function mint(address to, uint256 tokenId) external onlyOwner {
-        _mint(to, tokenId);
+    function safeMint(address to, uint256 tokenId) external onlyOwner {
+        _safeMint(to, tokenId);
     }
 
     function mintBySig(NFTSigVerifier.StatusMintSig calldata status, bytes memory rvs) external {
         verifyStatusMint(status, rvs);
 
-        _mint(status.base.owner, status.base.tokenId);
+        _safeMint(status.base.owner, status.base.tokenId);
     }
 
-    function upgradeNFT(uint256 tokenId, uint256 level) external onlyOwner {
+    function upgradeNFT(uint256 tokenId, uint256 level_) external onlyOwner {
         require(_exists(tokenId), "ERC721: token not minted");
         
-        _level[tokenId] += level;
+        level[tokenId] += level_;
+
+        emit Upgrade(tokenId, level[tokenId]);
     }
 
     function upgradeBySig(NFTSigVerifier.StatusUpgradeSig calldata statusUpgrade, bytes memory rvs) external {
         verifyStatusUpgrade(statusUpgrade, rvs);
 
-        _level[statusUpgrade.tokenId] += statusUpgrade.level;
+        level[statusUpgrade.tokenId] += statusUpgrade.level;
+        emit Upgrade(statusUpgrade.tokenId, level[statusUpgrade.tokenId]);
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal virtual override {

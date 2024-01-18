@@ -9,6 +9,9 @@ import "./abstract/NFTSigVerifier.sol";
 contract Voucher is ERC721, Ownable, NFTSigVerifier {
     using SafeERC20 for IERC20;
 
+    event VoucherMint(uint256 tokenId, uint256 cost);
+    event VoucherBurn(address user, uint256 tokenId, uint256 cost);
+
     IERC20 public token;
 
     mapping(uint256 tokenId => NFTSigVerifier.VoucherInfo) private vouchers_;
@@ -37,6 +40,8 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
         super._safeMint(base.owner, base.tokenId);
         
         vouchers_[base.tokenId] = info;
+
+        emit VoucherMint(base.tokenId, info.value);
     }
 
     function mintBySig(NFTSigVerifier.VoucherSig calldata voucher, bytes memory rvs) external {
@@ -44,6 +49,16 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
         super._safeMint(voucher.base.owner, voucher.base.tokenId);
         
         vouchers_[voucher.base.tokenId] = voucher.info;
+
+        emit VoucherMint(voucher.base.tokenId, voucher.info.value);
+    }
+
+    function burn(uint256 tokenId) external {
+        _burn(tokenId);
+    }
+
+    function updateTokenAddress(IERC20 token_) external onlyOwner {
+        token = token_;
     }
 
     function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal virtual override {
@@ -54,7 +69,9 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
 
     function _afterTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal virtual override {
         if(to == address(0)) {
-            token.safeTransfer(to, vouchers_[firstTokenId].value);
+            token.safeTransfer(from, vouchers_[firstTokenId].value);
+
+            emit VoucherBurn(from, firstTokenId, vouchers_[firstTokenId].value);
         }
     }
 
