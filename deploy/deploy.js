@@ -3,9 +3,13 @@ const hre = require('hardhat');
 const { getChainId } = hre;
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
-    console.log("running deploy payout script");
+    console.log("running deploy NFT script");
     console.log("network name: ", network.name);
     console.log("network id: ", await getChainId())
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
@@ -30,6 +34,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         })
     
         console.log("Status deployed to: ", status.address)
+
+        await sleep(10000)
     
         if (await getChainId() !== '31337') {
             await hre.run(`verify:verify`, {
@@ -56,6 +62,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         })
 
         console.log("Badge deployed to: ", badge.address)
+
+        await sleep(10000)
 
         if (await getChainId() !== '31337') {
             await hre.run(`verify:verify`, {
@@ -86,6 +94,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
         console.log("Voucher deployed to: ", voucher.address)
 
+        await sleep(10000)
+
         if (await getChainId() !== '31337') {
             await hre.run(`verify:verify`, {
                 address: voucher.address,
@@ -112,6 +122,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         })
 
         console.log("MysteryBox deployed to: ", mysteryBox.address)
+
+        await sleep(10000)
 
         if (await getChainId() !== '31337') {
             await hre.run(`verify:verify`, {

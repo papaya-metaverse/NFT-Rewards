@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
-import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import "@chainlink/contracts/src/v0.8/VRFV2WrapperConsumerBase.sol";
+import "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./abstract/NFTSigVerifier.sol";
 contract MysteryBox is Ownable, NFTSigVerifier, VRFV2WrapperConsumerBase {
@@ -34,16 +33,12 @@ contract MysteryBox is Ownable, NFTSigVerifier, VRFV2WrapperConsumerBase {
         address vrfWrapper,
         address linkToken,
         address protocolSigner_
-    ) NFTSigVerifier(protocolSigner_) VRFV2WrapperConsumerBase(linkToken, vrfWrapper) {}
+    ) NFTSigVerifier(protocolSigner_) VRFV2WrapperConsumerBase(linkToken, vrfWrapper) Ownable(msg.sender) {}
 
     function updatePrizeInfo(Types prizeType, uint40 probability, PrizeInfo[] calldata info) external onlyOwner {
         prizeProbability[prizeType] = probability;
 
-        delete prizeInfo[prizeType];
-
-        for(uint i; i < info.length; i++) {
-            prizeInfo[prizeType].push(info[i]);
-        }
+        prizeInfo[prizeType] = info;
     }
 
     function roll(NFTSigVerifier.MysteryBoxSig calldata mysteryBox, bytes memory rvs) external {
@@ -64,39 +59,26 @@ contract MysteryBox is Ownable, NFTSigVerifier, VRFV2WrapperConsumerBase {
         uint256 requestId,
         uint256[] memory randomWords
     ) internal override {
+        Types prizeType;
+
         if(randomWords[0] % 100 <= prizeProbability[Types.EXPERIENCE]) {
-            PrizeInfo[] storage info = prizeInfo[Types.EXPERIENCE];
-
-            for(uint i; i < prizeInfo[Types.EXPERIENCE].length; i++) {
-                if(uint40(randomWords[1] % 100) < info[i].upperBound) {
-                    prizes[roller[requestId]][Types.EXPERIENCE] += randomWords[1] % 100;
-                    break;
-                }
-            }
-
-            emit MysteryBoxOpened(roller[requestId], uint256(Types.EXPERIENCE), randomWords[1]);
+            prizeType = Types.EXPERIENCE;
         } else if (randomWords[0] % 100 <= prizeProbability[Types.VOUCHER]) {
-            PrizeInfo[] storage info = prizeInfo[Types.VOUCHER];
-
-            for(uint i; i < prizeInfo[Types.VOUCHER].length; i++) {
-                if(uint40(randomWords[1] % 100) < info[i].upperBound) {
-                    prizes[roller[requestId]][Types.VOUCHER] += randomWords[1] % 100;
-                    break;
-                }
-            }
-
-            emit MysteryBoxOpened(roller[requestId], uint256(Types.VOUCHER), randomWords[1]);
+            prizeType = Types.VOUCHER;
         } else {
-            PrizeInfo[] storage info = prizeInfo[Types.VCREDITS];
+            prizeType = Types.VCREDITS;
+        }
 
-            for(uint i; i < prizeInfo[Types.VCREDITS].length; i++) {
-                if(uint40(randomWords[1] % 100) < info[i].upperBound) {
-                    prizes[roller[requestId]][Types.VCREDITS] += randomWords[1] % 100;
-                    break;
-                }
+        PrizeInfo[] storage info = prizeInfo[prizeType];
+
+        for(uint i; i < info.length; i++) {
+            if(uint40(randomWords[1] % 100) <= info[i].upperBound) {
+                prizes[roller[requestId]][prizeType] += info[i].cost;
+
+                emit MysteryBoxOpened(roller[requestId], uint256(prizeType), info[i].cost); 
+
+                break;
             }
-
-            emit MysteryBoxOpened(roller[requestId], uint256(Types.VCREDITS), randomWords[1]); 
         }
     }
 }

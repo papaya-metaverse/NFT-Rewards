@@ -1,5 +1,4 @@
-const hre = require('hardhat')
-const { ethers } = hre
+const { ethers } = require('hardhat');
 
 async function deployStatus(signerAddress) {
     const name = "TEST_STATUS"
@@ -49,7 +48,7 @@ async function deployVoucher(tokenAddress, protocolSigner) {
 async function deployToken() {
     const name = "TEST"
     const symbol = "TST"
-    const totalSupply = ethers.utils.parseEther("2850000000000")
+    const totalSupply = ethers.parseEther("2850000000000")
     const TOKEN_DECIMALS = 18
 
     const args = [

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "./abstract/NFTSigVerifier.sol";
 
-contract Status is ERC721, Ownable, NFTSigVerifier {
+contract Status is ERC721, Ownable, NFTSigVerifier, Pausable {
     event Upgrade(uint256 indexed tokenId, uint256 level);
-
-    bool private _paused;
 
     mapping(uint256 tokenId => uint256 level) public level;
 
@@ -16,8 +15,8 @@ contract Status is ERC721, Ownable, NFTSigVerifier {
         string memory name_, 
         string memory symbol_, 
         address protocolSigner_
-    ) ERC721(name_, symbol_) NFTSigVerifier(protocolSigner_) {
-        _paused = true;
+    ) ERC721(name_, symbol_) NFTSigVerifier(protocolSigner_) Ownable(msg.sender) {
+        _pause();
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
@@ -25,11 +24,11 @@ contract Status is ERC721, Ownable, NFTSigVerifier {
     }
 
     function pause() external onlyOwner {
-        _paused = true;
+        _pause();
     }
 
     function unpause() external onlyOwner {
-        _paused = false;
+        _unpause();
     }
 
     function safeMint(address to, uint256 tokenId) external onlyOwner {
@@ -43,7 +42,7 @@ contract Status is ERC721, Ownable, NFTSigVerifier {
     }
 
     function upgradeNFT(uint256 tokenId, uint256 level_) external onlyOwner {
-        require(_exists(tokenId), "ERC721: token not minted");
+        require(_ownerOf(tokenId) != address(0), "ERC721: token not minted");
         
         level[tokenId] += level_;
 
@@ -57,9 +56,11 @@ contract Status is ERC721, Ownable, NFTSigVerifier {
         emit Upgrade(statusUpgrade.tokenId, level[statusUpgrade.tokenId]);
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal virtual override {
-        if(_paused) {
-            require(from == address(0), "ERC721: transfer is paused");
-        } 
+    function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address) {
+        if(_ownerOf(tokenId) == address(0)) {
+            super._update(to, tokenId, auth);
+        } else {
+            _requireNotPaused();
+        }
     }
 }

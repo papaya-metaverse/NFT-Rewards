@@ -82,22 +82,22 @@ function buildData (chainId_, verifyingContract_, types, data){
 
 async function signMint (chainId, target, statusMintData, wallet) {
     const data = buildData(chainId, target, StatusMint, statusMintData)
-    return await wallet._signTypedData(data.domain, data.types, data.value)
+    return await wallet.signTypedData(data.domain, data.types, data.value)
 }
 
 async function signUpgrade (chainId, target, statusUpgradeData, wallet) {
     const data = buildData(chainId, target, StatusUpgrade, statusUpgradeData)
-    return await wallet._signTypedData(data.domain, data.types, data.value)
+    return await wallet.signTypedData(data.domain, data.types, data.value)
 }
 
 async function signVoucher (chainId, target, voucherData, wallet) {
     const data = buildData(chainId, target, Voucher, voucherData)
-    return await wallet._signTypedData(data.domain, data.types, data.value)
+    return await wallet.signTypedData(data.domain, data.types, data.value)
 }
 
 async function signMysteryBox (chainId, target, mysteryBoxData, wallet) {
     const data = buildData(chainId, target, MysteryBox, mysteryBoxData)
-    return await wallet._signTypedData(data.domain, data.types, data.value)
+    return await wallet.signTypedData(data.domain, data.types, data.value)
 }
 
 module.exports = {

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20, IERC20} from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
 import "./abstract/NFTSigVerifier.sol";
+
+import "hardhat/console.sol";
 
 contract Voucher is ERC721, Ownable, NFTSigVerifier {
     using SafeERC20 for IERC20;
@@ -20,7 +22,11 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
         string memory symbol_, 
         IERC20 token_, 
         address protocolSigner_
-    ) ERC721(name_, symbol_) NFTSigVerifier(protocolSigner_) {
+    ) ERC721(name_, symbol_) NFTSigVerifier(protocolSigner_) Ownable(msg.sender) {
+        token = token_;
+    }
+
+    function updateTokenAddress(IERC20 token_) external onlyOwner {
         token = token_;
     }
 
@@ -37,7 +43,7 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
     }
 
     function safeMint(NftBase calldata base, VoucherInfo calldata info) external onlyOwner {
-        super._safeMint(base.owner, base.tokenId);
+        _safeMint(base.owner, base.tokenId);
         
         vouchers_[base.tokenId] = info;
 
@@ -46,7 +52,7 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
 
     function mintBySig(NFTSigVerifier.VoucherSig calldata voucher, bytes memory rvs) external {
         verifyVoucher(voucher, rvs);
-        super._safeMint(voucher.base.owner, voucher.base.tokenId);
+        _safeMint(voucher.base.owner, voucher.base.tokenId);
         
         vouchers_[voucher.base.tokenId] = voucher.info;
 
@@ -57,22 +63,21 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
         _burn(tokenId);
     }
 
-    function updateTokenAddress(IERC20 token_) external onlyOwner {
-        token = token_;
-    }
-
-    function _beforeTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal virtual override {
+    function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address) {
         if(to == address(0)) {
-            require(vouchers_[firstTokenId].expirationDate < block.timestamp, "Voucher: can`t be burned until expiration date");
+            require(block.timestamp > vouchers_[tokenId].expirationDate, "Voucher: can`t be burned until expiration date");
+
+            address from = _ownerOf(tokenId);
+
+            super._update(to, tokenId, auth);
+
+            delete vouchers_[tokenId];
+
+            token.safeTransfer(from, vouchers_[tokenId].value);
+
+            emit VoucherBurn(from, tokenId, vouchers_[tokenId].value);
+        } else {
+            super._update(to, tokenId, auth);
         }
     }
-
-    function _afterTokenTransfer(address from, address to, uint256 firstTokenId, uint256 batchSize) internal virtual override {
-        if(to == address(0)) {
-            token.safeTransfer(from, vouchers_[firstTokenId].value);
-
-            emit VoucherBurn(from, firstTokenId, vouchers_[firstTokenId].value);
-        }
-    }
-
 }
