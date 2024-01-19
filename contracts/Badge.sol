@@ -27,10 +27,10 @@ contract Badge is ERC721, Ownable, Pausable {
     }
 
     function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address) {
-        if(_ownerOf(tokenId) == address(0)) {
-            super._update(to, tokenId, auth);
-        } else {
+        if(_ownerOf(tokenId) != address(0)) {
             _requireNotPaused();
         }
+         
+        super._update(to, tokenId, auth);
     }
 }
