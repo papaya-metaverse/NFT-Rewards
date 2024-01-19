@@ -37,7 +37,7 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
     }
 
     function safeMint(NftBase calldata base, VoucherInfo calldata info) external onlyOwner {
-        super._safeMint(base.owner, base.tokenId);
+        _safeMint(base.owner, base.tokenId);
         
         vouchers_[base.tokenId] = info;
 
@@ -46,7 +46,7 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
 
     function mintBySig(NFTSigVerifier.VoucherSig calldata voucher, bytes memory rvs) external {
         verifyVoucher(voucher, rvs);
-        super._safeMint(voucher.base.owner, voucher.base.tokenId);
+        _safeMint(voucher.base.owner, voucher.base.tokenId);
         
         vouchers_[voucher.base.tokenId] = voucher.info;
 
