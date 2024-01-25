@@ -45,7 +45,8 @@ module.exports = {
     },
     etherscan: {
       apiKey:{
-        polygonMumbai: `${process.env.POLYGONSCAN_API_KEY}`
+        polygonMumbai: `${process.env.POLYGONSCAN_API_KEY}`,
+        polygon: `${process.env.POLYGONSCAN_API_KEY}`
       }
     },
     defaultNetwork: "hardhat",
@@ -82,5 +83,12 @@ module.exports = {
           mnemonic: `${process.env.SEED_PHRASE_DEPLOYER}`,
         }
       },
+      polygon: {
+        chainId: 137,
+        url: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_POLYGON_KEY}`,
+        accounts: {
+          mnemonic: `${process.env.SEED_PHRASE_DEPLOYER}`,
+        }
+      }
     },
 };

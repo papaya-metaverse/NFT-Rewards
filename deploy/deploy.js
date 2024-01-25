@@ -130,6 +130,6 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
                 address: mysteryBox.address,
                 constructorArguments: args
             })
-        }
+        }    
     }
 };

@@ -15,3 +15,4 @@ artifacts
 deployments
 /typechain-types/
 \.deps
+/scripts/
