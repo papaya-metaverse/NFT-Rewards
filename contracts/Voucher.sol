@@ -6,8 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20, IERC20} from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
 import "./abstract/NFTSigVerifier.sol";
 
-import "hardhat/console.sol";
-
 contract Voucher is ERC721, Ownable, NFTSigVerifier {
     using SafeERC20 for IERC20;
 
@@ -71,11 +69,15 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
 
             super._update(to, tokenId, auth);
 
+            uint216 value = vouchers_[tokenId].value;
+
             delete vouchers_[tokenId];
 
-            token.safeTransfer(from, vouchers_[tokenId].value);
+            token.safeTransfer(from, value);
 
-            emit VoucherBurn(from, tokenId, vouchers_[tokenId].value);
+            emit VoucherBurn(from, tokenId, value);
+
+            return from;
         } else {
             super._update(to, tokenId, auth);
         }

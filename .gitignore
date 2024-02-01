@@ -8,7 +8,8 @@ keys.json
 gas-report
 slither-results.json
 .env
-
+deploy/deploy_token.js
+mocks
 #Hardhat files
 cache
 artifacts
