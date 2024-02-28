@@ -61,6 +61,6 @@ contract Status is ERC721, Ownable, NFTSigVerifier, Pausable {
             _requireNotPaused();
         }
 
-        super._update(to, tokenId, auth);
+        return super._update(to, tokenId, auth);
     }
 }

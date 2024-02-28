@@ -79,7 +79,7 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
 
             return from;
         } else {
-            super._update(to, tokenId, auth);
+            return super._update(to, tokenId, auth);
         }
     }
 }

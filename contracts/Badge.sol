@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 
 contract Badge is ERC721, Ownable, Pausable {
     constructor(string memory name_, string memory symbol_) ERC721(name_, symbol_) Ownable(msg.sender) {
-         _pause();
+        _pause();
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
@@ -31,6 +31,6 @@ contract Badge is ERC721, Ownable, Pausable {
             _requireNotPaused();
         }
          
-        super._update(to, tokenId, auth);
+        return super._update(to, tokenId, auth);
     }
 }
