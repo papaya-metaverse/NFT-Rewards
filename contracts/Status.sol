@@ -4,18 +4,19 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
-import "./abstract/NFTSigVerifier.sol";
+import { BySig, EIP712 } from "@1inch/solidity-utils/contracts/mixins/BySig.sol";
 
-contract Status is ERC721, Ownable, NFTSigVerifier, Pausable {
+contract Status is ERC721, Ownable, Pausable, EIP712, BySig {
     event Upgrade(uint256 indexed tokenId, uint256 level);
+
+    error NotSupportedFeature();
 
     mapping(uint256 tokenId => uint256 level) public level;
 
     constructor(
-        string memory name_, 
-        string memory symbol_, 
-        address protocolSigner_
-    ) ERC721(name_, symbol_) NFTSigVerifier(protocolSigner_) Ownable(msg.sender) {
+        string memory name_,
+        string memory symbol_
+    ) ERC721(name_, symbol_) EIP712(type(Status).name, "1") Ownable(msg.sender) {
         _pause();
     }
 
@@ -35,25 +36,12 @@ contract Status is ERC721, Ownable, NFTSigVerifier, Pausable {
         _safeMint(to, tokenId);
     }
 
-    function mintBySig(NFTSigVerifier.StatusMintSig calldata status, bytes memory rvs) external {
-        verifyStatusMint(status, rvs);
-
-        _safeMint(status.base.owner, status.base.tokenId);
-    }
-
     function upgradeNFT(uint256 tokenId, uint256 level_) external onlyOwner {
         require(_ownerOf(tokenId) != address(0), "ERC721: token not minted");
-        
+
         level[tokenId] += level_;
 
         emit Upgrade(tokenId, level[tokenId]);
-    }
-
-    function upgradeBySig(NFTSigVerifier.StatusUpgradeSig calldata statusUpgrade, bytes memory rvs) external {
-        verifyStatusUpgrade(statusUpgrade, rvs);
-
-        level[statusUpgrade.tokenId] += statusUpgrade.level;
-        emit Upgrade(statusUpgrade.tokenId, level[statusUpgrade.tokenId]);
     }
 
     function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address) {
@@ -62,5 +50,13 @@ contract Status is ERC721, Ownable, NFTSigVerifier, Pausable {
         }
 
         return super._update(to, tokenId, auth);
+    }
+
+    function _chargeSigner(address signer, address relayer, address token, uint256 amount, bytes calldata /* extraData */) internal override {
+        revert NotSupportedFeature();
+    }
+
+    function _msgSender() internal view override(Context, BySig) returns (address) {
+        return super._msgSender();
     }
 }

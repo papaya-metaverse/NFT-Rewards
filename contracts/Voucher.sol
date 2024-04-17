@@ -4,23 +4,34 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20, IERC20} from "@1inch/solidity-utils/contracts/libraries/SafeERC20.sol";
-import "./abstract/NFTSigVerifier.sol";
+import { BySig, EIP712 } from "@1inch/solidity-utils/contracts/mixins/BySig.sol";
 
-contract Voucher is ERC721, Ownable, NFTSigVerifier {
+contract Voucher is ERC721, Ownable, EIP712, BySig {
     using SafeERC20 for IERC20;
 
     event VoucherMint(uint256 tokenId, uint256 cost);
     event VoucherBurn(address user, uint256 tokenId, uint256 cost);
 
+    error NotSupportedFeature();
+
+    struct VoucherInfo {
+        uint216 value;
+        uint40 expirationDate;
+    }
+
+    struct NftBase {
+        address owner;
+        uint256 tokenId;
+    }
+
     IERC20 public token;
 
-    mapping(uint256 tokenId => NFTSigVerifier.VoucherInfo) private vouchers_;
+    mapping(uint256 tokenId => VoucherInfo) private vouchers_;
     constructor(
-        string memory name_, 
-        string memory symbol_, 
-        IERC20 token_, 
-        address protocolSigner_
-    ) ERC721(name_, symbol_) NFTSigVerifier(protocolSigner_) Ownable(msg.sender) {
+        string memory name_,
+        string memory symbol_,
+        IERC20 token_
+    ) ERC721(name_, symbol_) EIP712(type(Voucher).name, "1") Ownable(msg.sender) {
         token = token_;
     }
 
@@ -42,19 +53,10 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
 
     function safeMint(NftBase calldata base, VoucherInfo calldata info) external onlyOwner {
         _safeMint(base.owner, base.tokenId);
-        
+
         vouchers_[base.tokenId] = info;
 
         emit VoucherMint(base.tokenId, info.value);
-    }
-
-    function mintBySig(NFTSigVerifier.VoucherSig calldata voucher, bytes memory rvs) external {
-        verifyVoucher(voucher, rvs);
-        _safeMint(voucher.base.owner, voucher.base.tokenId);
-        
-        vouchers_[voucher.base.tokenId] = voucher.info;
-
-        emit VoucherMint(voucher.base.tokenId, voucher.info.value);
     }
 
     function burn(uint256 tokenId) external {
@@ -81,5 +83,13 @@ contract Voucher is ERC721, Ownable, NFTSigVerifier {
         } else {
             return super._update(to, tokenId, auth);
         }
+    }
+
+    function _chargeSigner(address signer, address relayer, address token, uint256 amount, bytes calldata /* extraData */) internal override {
+        revert NotSupportedFeature();
+    }
+
+    function _msgSender() internal view override(Context, BySig) returns (address) {
+        return super._msgSender();
     }
 }

@@ -3,8 +3,14 @@ pragma solidity ^0.8.20;
 
 import "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "./abstract/NFTSigVerifier.sol";
-contract MysteryBox is Ownable, NFTSigVerifier, VRFV2WrapperConsumerBase {
+import { BySig, EIP712 } from "@1inch/solidity-utils/contracts/mixins/BySig.sol";
+
+contract MysteryBox is Ownable, VRFV2WrapperConsumerBase, EIP712, BySig {
+    event Roll(address indexed user, uint256 requestId);
+    event MysteryBoxOpened(address indexed user, uint256 rewardType, uint256 count);
+
+    error NotSupportedFeature();
+
     enum Types {
         VCREDITS,
         EXPERIENCE,
@@ -15,9 +21,6 @@ contract MysteryBox is Ownable, NFTSigVerifier, VRFV2WrapperConsumerBase {
         uint40 upperBound;
         uint216 cost;
     }
-
-    event Roll(address indexed user, uint256 requestId);
-    event MysteryBoxOpened(address indexed user, uint256 rewardType, uint256 count);
 
     uint16 requestConfirmations = 3;
     uint32 callbackGasLimit = 40000;
@@ -31,9 +34,8 @@ contract MysteryBox is Ownable, NFTSigVerifier, VRFV2WrapperConsumerBase {
 
     constructor(
         address vrfWrapper,
-        address linkToken,
-        address protocolSigner_
-    ) NFTSigVerifier(protocolSigner_) VRFV2WrapperConsumerBase(linkToken, vrfWrapper) Ownable(msg.sender) {}
+        address linkToken
+    ) EIP712(type(MysteryBox).name, "1") VRFV2WrapperConsumerBase(linkToken, vrfWrapper) Ownable(_msgSender()) {}
 
     function updatePrizeInfo(Types prizeType, uint40 probability, PrizeInfo[] calldata info) external onlyOwner {
         prizeProbability[prizeType] = probability;
@@ -41,18 +43,16 @@ contract MysteryBox is Ownable, NFTSigVerifier, VRFV2WrapperConsumerBase {
         prizeInfo[prizeType] = info;
     }
 
-    function roll(NFTSigVerifier.MysteryBoxSig calldata mysteryBox, bytes memory rvs) external {
-        verifyMysteryBox(mysteryBox, rvs);
-
+    function roll() external {
         uint256 requestId = requestRandomness(
             callbackGasLimit,
             requestConfirmations,
             numWords
         );
 
-        roller[requestId] = mysteryBox.user;
+        roller[requestId] = _msgSender();
 
-        emit Roll(mysteryBox.user, requestId);
+        emit Roll(_msgSender(), requestId);
     }
 
     function fulfillRandomWords(
@@ -75,10 +75,18 @@ contract MysteryBox is Ownable, NFTSigVerifier, VRFV2WrapperConsumerBase {
             if(uint40(randomWords[1] % 100) <= info[i].upperBound) {
                 prizes[roller[requestId]][prizeType] += info[i].cost;
 
-                emit MysteryBoxOpened(roller[requestId], uint256(prizeType), info[i].cost); 
+                emit MysteryBoxOpened(roller[requestId], uint256(prizeType), info[i].cost);
 
                 break;
             }
         }
+    }
+
+    function _chargeSigner(address signer, address relayer, address token, uint256 amount, bytes calldata /* extraData */) internal override {
+        revert NotSupportedFeature();
+    }
+
+    function _msgSender() internal view override(Context, BySig) returns (address) {
+        return super._msgSender();
     }
 }
