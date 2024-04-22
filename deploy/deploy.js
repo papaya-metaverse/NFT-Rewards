@@ -14,29 +14,26 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy } = deployments;
     const { deployer } = await getNamedAccounts();
 
-    const protocolSigner = process.env.PUBLIC_KEY_SIGNER
-
     {
         console.log("Deploy status");
 
         const name = "PAPAYA_Status"
         const symbol = "STATUS"
-        
+
         const args = [
             name,
-            symbol,
-            protocolSigner
+            symbol
         ]
-    
+
         const status = await deploy('Status', {
             from: deployer,
             args
         })
-    
+
         console.log("Status deployed to: ", status.address)
 
         await sleep(10000)
-    
+
         if (await getChainId() !== '31337') {
             await hre.run(`verify:verify`, {
                 address: status.address,
@@ -83,8 +80,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         const args = [
             name,
             symbol,
-            tokenAddress,
-            protocolSigner
+            tokenAddress
         ]
 
         const voucher = await deploy('Voucher', {
@@ -109,11 +105,10 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
 
         const vrfWrapper = process.env.VRF_WRAPPER
         const linkToken = process.env.LINK_TOKEN
-        
+
         const args = [
             vrfWrapper,
-            linkToken,
-            protocolSigner
+            linkToken
         ]
 
         const mysteryBox = await deploy('MysteryBox', {
@@ -130,7 +125,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
                 address: mysteryBox.address,
                 constructorArguments: args
             })
-        }    
+        }
     }
 };
 

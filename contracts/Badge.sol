@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -30,7 +30,7 @@ contract Badge is ERC721, Ownable, Pausable {
         if(_ownerOf(tokenId) != address(0)) {
             _requireNotPaused();
         }
-         
+
         return super._update(to, tokenId, auth);
     }
 }

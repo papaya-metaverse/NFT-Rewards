@@ -1,13 +1,12 @@
 const { ethers } = require('hardhat');
 
-async function deployStatus(signerAddress) {
+async function deployStatus() {
     const name = "TEST_STATUS"
     const symbol = "STATUS"
 
     const args = [
         name,
-        symbol,
-        signerAddress
+        symbol
     ]
 
     const contract = await ethers.deployContract("Status", args)
@@ -29,15 +28,14 @@ async function deployBadge() {
     return contract
 }
 
-async function deployVoucher(tokenAddress, protocolSigner) {
+async function deployVoucher(tokenAddress) {
     const name = "TEST_VOUCHER"
     const symbol = "VOUCHER"
 
     const args = [
         name,
         symbol,
-        tokenAddress,
-        protocolSigner
+        tokenAddress
     ]
 
     const contract = await ethers.deployContract("Voucher", args)
@@ -63,11 +61,10 @@ async function deployToken() {
     return contract
 }
 
-async function deployMysteryBox(vrfWrapper, linkToken, signerAddress) {
+async function deployMysteryBox(vrfWrapper, linkToken) {
     const args = [
         vrfWrapper,
-        linkToken,
-        signerAddress
+        linkToken
     ]
 
     const contract = await ethers.deployContract("MysteryBox", args)

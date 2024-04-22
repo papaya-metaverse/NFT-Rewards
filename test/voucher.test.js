@@ -1,7 +1,7 @@
 const hre = require('hardhat')
 const { ethers } = hre
 const { expect, time, constants } = require('@1inch/solidity-utils')
-const { deployVoucher, deployToken } = require('./helpers/deploy') 
+const { deployVoucher, deployToken } = require('./helpers/deploy')
 const { signVoucher } = require('./helpers/signatureUtils')
 
 describe('Voucher test', function () {
@@ -10,7 +10,7 @@ describe('Voucher test', function () {
 
     async function timestamp() {
         let blockNumber = await ethers.provider.getBlockNumber()
-        let block = await ethers.provider.getBlock(blockNumber) 
+        let block = await ethers.provider.getBlock(blockNumber)
 
         return block.timestamp
     }
@@ -24,7 +24,7 @@ describe('Voucher test', function () {
     describe('Tests', function() {
         it("Method: safeMint", async function () {
             const token = await deployToken()
-            const voucher = await deployVoucher(await token.getAddress(), signer.address)
+            const voucher = await deployVoucher(await token.getAddress())
 
             const base = {
                 owner: user_1.address,
@@ -37,42 +37,13 @@ describe('Voucher test', function () {
             }
 
             await voucher.safeMint(base, info)
-            
-            expect(await voucher.ownerOf(tokenId)).to.be.eq(user_1.address)
-        })
-
-        it("Method: mintBySig", async function () {
-            const token = await deployToken()
-            const voucher = await deployVoucher(await token.getAddress(), signer.address)
-
-            const nonce = await voucher.nonces(user_1.address)
-
-            const voucherData = {
-                sig: {
-                    signer: signer.address,
-                    nonce: nonce,
-                    executionFee: 0
-                },
-                base: {
-                    owner: user_1.address,
-                    tokenId: tokenId
-                },
-                info: {
-                    value: 10,
-                    expirationDate: await timestamp() + 100
-                }
-            }
-
-            const signature = await signVoucher(CHAIN_ID, voucher.address, voucherData, signer)
-
-            await voucher.mintBySig(voucherData, signature)
 
             expect(await voucher.ownerOf(tokenId)).to.be.eq(user_1.address)
         })
 
         it("Method: burn", async function() {
             const token = await deployToken()
-            const voucher = await deployVoucher(await token.getAddress(), signer.address)
+            const voucher = await deployVoucher(await token.getAddress())
 
             await token.transfer(await voucher.getAddress(), 10)
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import "@chainlink/contracts/src/v0.8/vrf/VRFV2WrapperConsumerBase.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
